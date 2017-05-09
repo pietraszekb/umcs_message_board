@@ -1,7 +1,6 @@
 package com.example.maktel.messageboardumcs;
 
-import android.content.Context;
-import android.content.SharedPreferences;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -9,6 +8,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 /**
@@ -19,14 +19,16 @@ public class ScreenSlidePageFragment extends Fragment {
     private static final String DEBUG_TAG = "NewsFragment";
     // which news should be got from news table
     public static final String ARG_NEWS_INDEX = "news_index";
+    public static final String ARG_NEWS_OBJECT = "news_object";
 
     private int mNewsIndex;
-    private String mNewsContent;
+    private News mNews;
 
-    public static ScreenSlidePageFragment create(int newsIndex) {
+    public static ScreenSlidePageFragment create(int newsIndex, News news) {
         ScreenSlidePageFragment fragment = new ScreenSlidePageFragment();
         // create bundle only because it's Android recommended way
         Bundle args = new Bundle();
+        args.putSerializable(ARG_NEWS_OBJECT, news);
         args.putInt(ARG_NEWS_INDEX, newsIndex);
         fragment.setArguments(args);
         return fragment;
@@ -37,17 +39,11 @@ public class ScreenSlidePageFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        mNewsIndex = getArguments().getInt(ARG_NEWS_INDEX);
 
-        SharedPreferences sharedPreferences = getActivity().getSharedPreferences("MainActivity",
-                Context.MODE_PRIVATE);
-        // TODO get some random fact as a default value (on error for example)
-        String defaultValue = "No value with this key";
-        mNewsContent = sharedPreferences.getString("news_content_" + Integer.toString(mNewsIndex)
-                , defaultValue);
+        mNewsIndex = getArguments().getInt(ARG_NEWS_INDEX);
         Log.d(DEBUG_TAG, "mNewsIndex: " + mNewsIndex);
-        Log.d(DEBUG_TAG, "Preferences id: " + ("news_content_" + Integer.toString(mNewsIndex)));
-        Log.d(DEBUG_TAG, "mNewsContent: " + mNewsContent);
+
+        mNews = (News) getArguments().getSerializable(ARG_NEWS_OBJECT);
     }
 
     @Nullable
@@ -57,7 +53,13 @@ public class ScreenSlidePageFragment extends Fragment {
         ViewGroup rootView = (ViewGroup) inflater.inflate(R.layout.fragment_screen_slide_page,
                 container, false);
 
-        ((TextView) rootView.findViewById(R.id.news_content)).setText(mNewsContent);
+        ((TextView) rootView.findViewById(R.id.news_title)).setText(mNews.title);
+        ((TextView) rootView.findViewById(R.id.news_text)).setText(mNews.text);
+        ((TextView) rootView.findViewById(R.id.news_author)).setText(mNews.author);
+        ((TextView) rootView.findViewById(R.id.news_date)).setText(mNews.date.toString());
+        Drawable image = getResources().getDrawable(mNews.logoDrawable);
+        ((ImageView) rootView.findViewById(R.id.news_image)).setImageDrawable(image);
+
 
         return rootView;
     }

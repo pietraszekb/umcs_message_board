@@ -1,26 +1,39 @@
 package com.example.maktel.messageboardumcs;
 
-import android.content.SharedPreferences;
+import android.annotation.SuppressLint;
+import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.content.Intent;
-import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
-import android.support.v4.app.NavUtils;
-import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 
-/**
- * An example full-screen activity that shows and hides the system UI (i.e.
- * status bar and navigation/system bar) with user interaction.
- */
+import com.android.volley.Request;
+import com.android.volley.RequestQueue;
+import com.android.volley.Response;
+import com.android.volley.VolleyError;
+import com.android.volley.toolbox.JsonArrayRequest;
+import com.android.volley.toolbox.Volley;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.sql.Date;
+import java.util.ArrayList;
+
+
 public class ScreenSlideActivity extends FragmentActivity {
     private static final String DEBUG_TAG = "ScreenSlideActivity";
     // handles animations and swipes
@@ -35,9 +48,46 @@ public class ScreenSlideActivity extends FragmentActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_screen_slide);
 
+        try {
+            File newsListFile = new File(getApplicationContext().getFilesDir() +
+                    NEWS_LIST_FILENAME);
+            Log.d(DEBUG_TAG, "File length: " + newsListFile.length());
+            if (newsListFile.length() != 0) {
+                ObjectInputStream ois = new ObjectInputStream(new FileInputStream(newsListFile));
+                mNewsList = (SerializableArrayList<News>) ois.readObject();
+                Log.d(DEBUG_TAG, "Read list from file: " + mNewsList.toString());
+                ois.close();
+
+                if (!newsListFile.delete()) {
+                    Log.w(DEBUG_TAG, "File with saved list has not been deleted");
+                }
+            }
+
+        } catch (IOException | ClassNotFoundException e) {
+            Log.e(DEBUG_TAG, e.getMessage());
+        }
+
+        queue = Volley.newRequestQueue(getApplicationContext());
+        networkRunnable.run();
+
         mPager = (ViewPager) findViewById(R.id.pager);
         mPagerAdapter = new ScreenSlidePagerAdapter(getSupportFragmentManager());
-        mPagerAdapter.setSize(5);  // TODO change this hardcoded value
+
+        if (mNewsList.size() == 0) {
+            mNewsList.setOrAdd(0, new News());  // placeholder
+            mNewsList.setOrAdd(1, new News("Czy wiesz, że...", "system mikroprocesorowy DSM51 " +
+                    "taktowany jest " +
+                    "rezonatorem kwarcowym o częstotliwści 11 059 200 Hz?", new Date(0),
+                    "Asemblerowy" +
+                            " Świrek", News.NewsType.FACT));
+            mNewsList.setOrAdd(2, new News("Czy wiesz, że...", "instrukcja LJMP w systemie " +
+                    "mikroprocesorowym " +
+                    "DSM51 zajmuje w kodzie programu 3 bajty, z czego dwa przeznaczone są na " +
+                    "szesnastobitowy adres pamięci, do którego wykonywany jest skok?", new Date(0),
+                    "Asemblerowy Świrek", News.NewsType.FACT));
+        }
+        mPagerAdapter.setSize(mNewsList.size() - 1);
+
         mPager.setAdapter(mPagerAdapter);
         // extracts which page is currently displayed
         mPager.addOnPageChangeListener(new PageListener());
@@ -66,6 +116,8 @@ public class ScreenSlideActivity extends FragmentActivity {
         public void run() {
             mPager.setCurrentItem(++mCurrentItem, true);
 
+            Log.d(DEBUG_TAG, mNewsList.toString());
+
             scrollHandler.postDelayed(ViewPagerAutomaticScroll, SCROLL_DELAY);
         }
     };
@@ -81,7 +133,9 @@ public class ScreenSlideActivity extends FragmentActivity {
         @Override
         public Fragment getItem(int newsIndex) {
             Log.d(DEBUG_TAG, "Created item: " + newsIndex);
-            return ScreenSlidePageFragment.create(newsIndex);
+            News news = new News();
+            if (newsIndex < mNewsList.size()) news = mNewsList.get(newsIndex);
+            return ScreenSlidePageFragment.create(newsIndex, news);
         }
 
         public void setSize(int size) {
@@ -111,5 +165,112 @@ public class ScreenSlideActivity extends FragmentActivity {
                 mPager.setCurrentItem(1, animate);
             }
         }
+    }
+
+    private SerializableArrayList<News> mNewsList = new SerializableArrayList<>();
+
+    private final Handler networkHandler = new Handler();
+    private final static int REQUEST_DELAY = 3000;
+
+    private RequestQueue queue;
+
+    private Runnable networkRunnable = new Runnable() {
+        @Override
+        public void run() {
+//            String url = "http://192.168.1.9:3000";
+            String url = "http://192.168.0.22:3000";
+//            String url = "http://umcs-tablica.azurewebsites.net/api/v1/ogloszenia";
+
+            final JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(Request.Method.GET, url,
+                    null, new Response.Listener<JSONArray>() {
+                @Override
+                public void onResponse(JSONArray response) {
+                    parseJSonResponse(response);
+                }
+
+            }, new Response.ErrorListener() {
+                @Override
+                public void onErrorResponse(VolleyError error) {
+                    // TODO handle an error somehow
+                    Log.e(DEBUG_TAG, "Request error: " + error.getMessage());
+                }
+            });
+            queue.add(jsonArrayRequest);
+
+            networkHandler.postDelayed(networkRunnable, REQUEST_DELAY);
+        }
+    };
+
+    private void parseJSonResponse(JSONArray responseArray) {
+        try {
+            int position = 1;
+            for (int i = 0; i < responseArray.length(); ++i) {
+                Log.d(DEBUG_TAG, "Str: " + responseArray.getString(i));
+
+                JSONObject jsonObject = responseArray.getJSONObject(i);
+                String title = jsonObject.getString("title");
+                String text = jsonObject.getString("text");
+                String author = jsonObject.getString("author");
+
+                Date date = new Date(jsonObject.getLong("date") * 1000);  // java expects
+                // milliseconds
+                Log.d(DEBUG_TAG, "Date: " + date + " parsed: " + date.toString());
+
+                News news = new News(title, text, date, author, News.NewsType.NEWS);
+                mNewsList.setOrAdd(position++, news);
+            }
+
+            mPagerAdapter.setSize(responseArray.length());
+            Log.d(DEBUG_TAG, "Size of mPagerAdapter: " + mPagerAdapter.getCount());
+            mPagerAdapter.notifyDataSetChanged();
+
+        } catch (JSONException e) {
+            Log.e(DEBUG_TAG, e.getMessage());
+        }
+    }
+
+    private class SerializableArrayList<T> extends ArrayList<T> implements Serializable {
+        static final long serialVersionUID = 2137L;
+
+        void setOrAdd(int index, T element) {
+            try {
+                super.set(index, element);
+            } catch (IndexOutOfBoundsException e) {
+                super.add(element);
+            }
+        }
+
+        private void writeObject(ObjectOutputStream outputStream) throws IOException {
+            for (int i = 0; i < this.size(); ++i) outputStream.writeObject(this.get(i));
+        }
+    }
+
+    private static final String NEWS_LIST_FILENAME = "NewsArrayList.ser";
+
+    @Override
+    protected void onDestroy() {
+        Log.d(DEBUG_TAG, "onDestroy() called, leaving activity");
+
+        networkHandler.removeCallbacks(networkRunnable);
+        scrollHandler.removeCallbacks(ViewPagerAutomaticScroll);
+
+        try {
+            File newsListFile = new File(getApplicationContext().getFilesDir() +
+                    NEWS_LIST_FILENAME);
+            ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(newsListFile));
+            Log.d(DEBUG_TAG, mNewsList.toString());
+            oos.writeObject(mNewsList);
+
+            Log.d(DEBUG_TAG, "News list saved to " + NEWS_LIST_FILENAME);
+            oos.close();
+
+        } catch (IOException e) {
+            Log.e(DEBUG_TAG, "Saving error: " + e.getMessage());
+            e.printStackTrace();
+            if (e.getCause() != null)
+                Log.d(DEBUG_TAG, "Saving error cause: " + e.getCause().getMessage());
+        }
+
+        super.onDestroy();
     }
 }
