@@ -12,10 +12,10 @@ import java.util.Date;
  */
 
 class News implements Serializable {
-    static final long serialVersionUID = 7312L;
+    static final long serialVersionUID = 1L;
     String title;
     String text;
-    transient Date date;
+    Date date;
     String author;
 
     News(String title, String text, Date date, String author) {
@@ -38,16 +38,12 @@ class News implements Serializable {
 
 
     enum NewsType {PLACEHOLDER, NEWS, FACT}
-
-    ;
     private NewsType newsType;
 
 
     private enum LogoType {UMCS, SKNI, MICROSOFT}
-
-    ;
     private LogoType logoType;
-    transient int logoDrawable;
+    int logoDrawable;
 
     private int getLogoDrawable(String author) {
         String[] authors = {"Zbigniew Kowalski", "Asemblerowy Świrek", "Mark Russinovich"};

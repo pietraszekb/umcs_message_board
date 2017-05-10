@@ -29,12 +29,15 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.sql.Date;
 import java.util.ArrayList;
 
 
 public class ScreenSlideActivity extends FragmentActivity {
+    static final long serialVersionUID = 732485234L;
+
     private static final String DEBUG_TAG = "ScreenSlideActivity";
     // handles animations and swipes
     private ViewPager mPager;
@@ -51,10 +54,27 @@ public class ScreenSlideActivity extends FragmentActivity {
         try {
             File newsListFile = new File(getApplicationContext().getFilesDir() +
                     NEWS_LIST_FILENAME);
-            Log.d(DEBUG_TAG, "File length: " + newsListFile.length());
+            Log.d(DEBUG_TAG, "Reading file of length: " + newsListFile.length());
             if (newsListFile.length() != 0) {
                 ObjectInputStream ois = new ObjectInputStream(new FileInputStream(newsListFile));
-                mNewsList = (SerializableArrayList<News>) ois.readObject();
+
+                // safe read; ensures list if not empty
+                // mNewsList = (ArrayList<News>) ois.readObject();
+                Object object = ois.readObject();
+                if (object instanceof ArrayList<?>) {
+                    ArrayList<?> arrayList = (ArrayList<?>) object;
+                    if (arrayList.size() > 0) {
+                        for (int i = 0; i < arrayList.size(); ++i) {
+                            Object listElement = arrayList.get(i);
+                            if (listElement instanceof News) {
+                                News news = (News) listElement;
+                                // list was empty, simple add() will suffice
+                                mNewsList.add(news);
+                            }
+                        }
+                    }
+                }
+
                 Log.d(DEBUG_TAG, "Read list from file: " + mNewsList.toString());
                 ois.close();
 
@@ -64,7 +84,8 @@ public class ScreenSlideActivity extends FragmentActivity {
             }
 
         } catch (IOException | ClassNotFoundException e) {
-            Log.e(DEBUG_TAG, e.getMessage());
+            Log.e(DEBUG_TAG, "Error: " + e.getMessage());
+            e.printStackTrace();
         }
 
         queue = Volley.newRequestQueue(getApplicationContext());
@@ -73,14 +94,15 @@ public class ScreenSlideActivity extends FragmentActivity {
         mPager = (ViewPager) findViewById(R.id.pager);
         mPagerAdapter = new ScreenSlidePagerAdapter(getSupportFragmentManager());
 
+        // populate list if saved state couldn't recover previous elements
         if (mNewsList.size() == 0) {
-            mNewsList.setOrAdd(0, new News());  // placeholder
-            mNewsList.setOrAdd(1, new News("Czy wiesz, że...", "system mikroprocesorowy DSM51 " +
+            setOrAddToMNewsList(0, new News());  // placeholder
+            setOrAddToMNewsList(1, new News("Czy wiesz, że...", "system mikroprocesorowy DSM51 " +
                     "taktowany jest " +
                     "rezonatorem kwarcowym o częstotliwści 11 059 200 Hz?", new Date(0),
                     "Asemblerowy" +
                             " Świrek", News.NewsType.FACT));
-            mNewsList.setOrAdd(2, new News("Czy wiesz, że...", "instrukcja LJMP w systemie " +
+            setOrAddToMNewsList(2, new News("Czy wiesz, że...", "instrukcja LJMP w systemie " +
                     "mikroprocesorowym " +
                     "DSM51 zajmuje w kodzie programu 3 bajty, z czego dwa przeznaczone są na " +
                     "szesnastobitowy adres pamięci, do którego wykonywany jest skok?", new Date(0),
@@ -126,7 +148,7 @@ public class ScreenSlideActivity extends FragmentActivity {
         private static final String DEBUG_TAG = "PagerAdapter";
         private int mSize;
 
-        public ScreenSlidePagerAdapter(FragmentManager fragmentManager) {
+        ScreenSlidePagerAdapter(FragmentManager fragmentManager) {
             super(fragmentManager);
         }
 
@@ -138,7 +160,7 @@ public class ScreenSlideActivity extends FragmentActivity {
             return ScreenSlidePageFragment.create(newsIndex, news);
         }
 
-        public void setSize(int size) {
+        void setSize(int size) {
             mSize = size + 2;
         }
 
@@ -167,7 +189,7 @@ public class ScreenSlideActivity extends FragmentActivity {
         }
     }
 
-    private SerializableArrayList<News> mNewsList = new SerializableArrayList<>();
+    ArrayList<News> mNewsList = new ArrayList<>();
 
     private final Handler networkHandler = new Handler();
     private final static int REQUEST_DELAY = 3000;
@@ -217,7 +239,7 @@ public class ScreenSlideActivity extends FragmentActivity {
                 Log.d(DEBUG_TAG, "Date: " + date + " parsed: " + date.toString());
 
                 News news = new News(title, text, date, author, News.NewsType.NEWS);
-                mNewsList.setOrAdd(position++, news);
+                setOrAddToMNewsList(position++, news);
             }
 
             mPagerAdapter.setSize(responseArray.length());
@@ -226,22 +248,6 @@ public class ScreenSlideActivity extends FragmentActivity {
 
         } catch (JSONException e) {
             Log.e(DEBUG_TAG, e.getMessage());
-        }
-    }
-
-    private class SerializableArrayList<T> extends ArrayList<T> implements Serializable {
-        static final long serialVersionUID = 2137L;
-
-        void setOrAdd(int index, T element) {
-            try {
-                super.set(index, element);
-            } catch (IndexOutOfBoundsException e) {
-                super.add(element);
-            }
-        }
-
-        private void writeObject(ObjectOutputStream outputStream) throws IOException {
-            for (int i = 0; i < this.size(); ++i) outputStream.writeObject(this.get(i));
         }
     }
 
@@ -258,7 +264,7 @@ public class ScreenSlideActivity extends FragmentActivity {
             File newsListFile = new File(getApplicationContext().getFilesDir() +
                     NEWS_LIST_FILENAME);
             ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(newsListFile));
-            Log.d(DEBUG_TAG, mNewsList.toString());
+            Log.d(DEBUG_TAG, "List to be saved: " + mNewsList.toString());
             oos.writeObject(mNewsList);
 
             Log.d(DEBUG_TAG, "News list saved to " + NEWS_LIST_FILENAME);
@@ -273,4 +279,32 @@ public class ScreenSlideActivity extends FragmentActivity {
 
         super.onDestroy();
     }
+
+    /**
+     * This method exists only because somehow I couldn't make serialization work with custom class
+     * that extended ArrayList
+     */
+    private void setOrAddToMNewsList(int index, News news) {
+        try {
+            mNewsList.set(index, news);
+        } catch (IndexOutOfBoundsException e) {
+            mNewsList.add(news);
+        }
+    }
+
+    /*
+      TODO fix it if you can and remove setOrAddToMNewsList()
+     */
+//    private class SerializableArrayList extends ArrayList<News> {
+//        static final long serialVersionUID = 1L;
+//
+//        void setOrAdd(int index, News element) {
+//            try {
+//                super.set(index, element);
+//            } catch (IndexOutOfBoundsException e) {
+//                super.add(element);
+//            }
+//        }
+//    }
+
 }
