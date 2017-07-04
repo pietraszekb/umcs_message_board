@@ -59,14 +59,13 @@ public class ScreenSlideActivity extends FragmentActivity {
                 ObjectInputStream ois = new ObjectInputStream(new FileInputStream(newsListFile));
 
                 // safe read; ensures list if not empty
-                // mNewsList = (ArrayList<News>) ois.readObject();
                 Object object = ois.readObject();
-                if (object instanceof ArrayList<?>) {
-                    ArrayList<?> arrayList = (ArrayList<?>) object;
-                    if (arrayList.size() > 0) {
-                        for (int i = 0; i < arrayList.size(); ++i) {
-                            Object listElement = arrayList.get(i);
-                            if (listElement instanceof News) {
+                if (object instanceof NewsArrayList) {
+                    NewsArrayList newsList = (NewsArrayList) object;
+                    if (newsList.size() > 0) {
+                        for (int i = 0; i < newsList.size(); ++i) {
+                            Object listElement = newsList.get(i);
+                            if (listElement != null) {
                                 News news = (News) listElement;
                                 // list was empty, simple add() will suffice
                                 mNewsList.add(news);
@@ -96,13 +95,13 @@ public class ScreenSlideActivity extends FragmentActivity {
 
         // populate list if saved state couldn't recover previous elements
         if (mNewsList.size() == 0) {
-            setOrAddToMNewsList(0, new News());  // placeholder
-            setOrAddToMNewsList(1, new News("Czy wiesz, że...", "system mikroprocesorowy DSM51 " +
+            mNewsList.setOrAdd(0, new News());  // placeholder
+            mNewsList.setOrAdd(1, new News("Czy wiesz, że...", "system mikroprocesorowy DSM51 " +
                     "taktowany jest " +
                     "rezonatorem kwarcowym o częstotliwści 11 059 200 Hz?", new Date(0),
                     "Asemblerowy" +
                             " Świrek", News.NewsType.FACT));
-            setOrAddToMNewsList(2, new News("Czy wiesz, że...", "instrukcja LJMP w systemie " +
+            mNewsList.setOrAdd(2, new News("Czy wiesz, że...", "instrukcja LJMP w systemie " +
                     "mikroprocesorowym " +
                     "DSM51 zajmuje w kodzie programu 3 bajty, z czego dwa przeznaczone są na " +
                     "szesnastobitowy adres pamięci, do którego wykonywany jest skok?", new Date(0),
@@ -189,7 +188,7 @@ public class ScreenSlideActivity extends FragmentActivity {
         }
     }
 
-    ArrayList<News> mNewsList = new ArrayList<>();
+    NewsArrayList mNewsList = new NewsArrayList();
 
     private final Handler networkHandler = new Handler();
     private final static int REQUEST_DELAY = 3000;
@@ -199,8 +198,9 @@ public class ScreenSlideActivity extends FragmentActivity {
     private Runnable networkRunnable = new Runnable() {
         @Override
         public void run() {
+            String url = "http://nw1pdey0gpbi.azurewebsites.net/api.php";
 //            String url = "http://192.168.1.9:3000";
-            String url = "http://192.168.0.22:3000";
+//            String url = "http://192.168.0.22:3000";
 //            String url = "http://umcs-tablica.azurewebsites.net/api/v1/ogloszenia";
 
             final JsonArrayRequest jsonArrayRequest = new JsonArrayRequest(Request.Method.GET, url,
@@ -239,7 +239,7 @@ public class ScreenSlideActivity extends FragmentActivity {
                 Log.d(DEBUG_TAG, "Date: " + date + " parsed: " + date.toString());
 
                 News news = new News(title, text, date, author, News.NewsType.NEWS);
-                setOrAddToMNewsList(position++, news);
+                mNewsList.setOrAdd(position++, news);
             }
 
             mPagerAdapter.setSize(responseArray.length());
@@ -279,32 +279,4 @@ public class ScreenSlideActivity extends FragmentActivity {
 
         super.onDestroy();
     }
-
-    /**
-     * This method exists only because somehow I couldn't make serialization work with custom class
-     * that extended ArrayList
-     */
-    private void setOrAddToMNewsList(int index, News news) {
-        try {
-            mNewsList.set(index, news);
-        } catch (IndexOutOfBoundsException e) {
-            mNewsList.add(news);
-        }
-    }
-
-    /*
-      TODO fix it if you can and remove setOrAddToMNewsList()
-     */
-//    private class SerializableArrayList extends ArrayList<News> {
-//        static final long serialVersionUID = 1L;
-//
-//        void setOrAdd(int index, News element) {
-//            try {
-//                super.set(index, element);
-//            } catch (IndexOutOfBoundsException e) {
-//                super.add(element);
-//            }
-//        }
-//    }
-
 }
