@@ -2,14 +2,15 @@
              xmlns:tools="http://schemas.android.com/tools"
              android:layout_width="match_parent"
              android:layout_height="match_parent"
-             android:background="@android:color/holo_blue_light"
+             android:background="#ccc"
              tools:context="com.example.maktel.messageboardumcs.ScreenSlideActivity">
 
     <DigitalClock
         android:textSize="50sp"
         android:layout_gravity="right"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"/>
+        android:layout_height="wrap_content"
+        android:textColor="#333"/>
 
     <android.support.v4.view.ViewPager
         android:id="@+id/pager"

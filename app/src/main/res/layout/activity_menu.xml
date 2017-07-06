@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.example.maktel.messageboardumcs.MenuActivity">
+
+    <TableLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center_vertical">
+        <TableRow
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_horizontal">
+
+                <Button
+                    android:id="@+id/addNotyficationButton"
+                    android:layout_width="350dp"
+                    android:layout_height="200dp"
+                    android:text="Ogłoszenia"
+                    android:layout_margin="5dp"
+                    android:onClick="openNewsView"
+                    android:textSize="30sp"
+                    />
+                <Button
+                    android:layout_width="350dp"
+                    android:layout_height="200dp"
+                    android:text="Dodaj zgłoszenie"
+                    android:layout_toRightOf="@+id/addNotyficationButton"
+                    android:layout_margin="5dp"
+                    android:textSize="30sp"
+                    />
+
+
+        </TableRow>
+        <TableLayout>
+            <RelativeLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="center_horizontal">
+                <Button
+                    android:gravity="bottom|center"
+                    android:id="@+id/scheduleButton"
+                    android:layout_width="350dp"
+                    android:layout_height="200dp"
+                    android:text="Plan Zajęć"
+                    android:layout_margin="5dp"
+                    android:textAlignment="gravity"
+                    android:drawableTop="@drawable/calendar_icon"
+                    android:drawablePadding="10dp"
+                    />
+                <Button
+                    android:layout_width="350dp"
+                    android:layout_height="200dp"
+                    android:layout_margin="5dp"
+                    android:layout_toRightOf="@+id/scheduleButton">
+
+                               </Button>
+
+            </RelativeLayout>
+        </TableLayout>
+    </TableLayout>
+
+
+</LinearLayout>

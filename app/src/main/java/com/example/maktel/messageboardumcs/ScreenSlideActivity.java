@@ -97,16 +97,17 @@ public class ScreenSlideActivity extends FragmentActivity {
         // populate list if saved state couldn't recover previous elements
         if (mNewsList.size() == 0) {
             setOrAddToMNewsList(0, new News());  // placeholder
-            setOrAddToMNewsList(1, new News("Czy wiesz, że...", "system mikroprocesorowy DSM51 " +
-                    "taktowany jest " +
-                    "rezonatorem kwarcowym o częstotliwści 11 059 200 Hz?", new Date(0),
+            setOrAddToMNewsList(1, new News("Czy wiesz, że...", "To jest przykładowa wiadomość informująca o " +
+                    "studencie, który wyskoczył z budynku rektoratu." +
+                    "No nie dość że debil przypału narobił to jeszcze wziął i szybe rozbił.", new Date(117,6,30),
                     "Asemblerowy" +
                             " Świrek", News.NewsType.FACT));
-            setOrAddToMNewsList(2, new News("Czy wiesz, że...", "instrukcja LJMP w systemie " +
-                    "mikroprocesorowym " +
-                    "DSM51 zajmuje w kodzie programu 3 bajty, z czego dwa przeznaczone są na " +
-                    "szesnastobitowy adres pamięci, do którego wykonywany jest skok?", new Date(0),
-                    "Asemblerowy Świrek", News.NewsType.FACT));
+            setOrAddToMNewsList(2, new News("Czy wiesz, że...", "W dniu 21.05 za dr Iksińskeigo zostają wyznaczone zastępstwa:" +
+                    "\n-grupa o godzinie 16:00 z dr ... w sali 205" +
+                    "\n-grupa o godzinie 17:30 z mgr ... w sali 400" +
+                    "\n-grupa o godzinie 19:00 ma odwołane zajęcia"
+                    , new Date(117,7,1),
+                    "Grzegorz Pędziwiatr", News.NewsType.FACT));
         }
         mPagerAdapter.setSize(mNewsList.size() - 1);
 

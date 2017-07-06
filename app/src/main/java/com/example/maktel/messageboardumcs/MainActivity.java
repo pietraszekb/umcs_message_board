@@ -34,4 +34,7 @@ public class MainActivity extends AppCompatActivity {
         if (new File(getApplicationContext().getFilesDir() + "NewsArrayList.ser").length() > 0)
             new File(getApplicationContext().getFilesDir() + "NewsArrayList.ser").delete();
     }
+    public void OpenMenuView(View v){startActivity(new Intent(this, MenuActivity.class));
+
+    }
 }

@@ -46,7 +46,7 @@ class News implements Serializable {
     int logoDrawable;
 
     private int getLogoDrawable(String author) {
-        String[] authors = {"Zbigniew Kowalski", "Asemblerowy Świrek", "Mark Russinovich"};
+        String[] authors = {"Anonymous", "Asemblerowy Świrek", "Mark Russinovich"};
         int i;
         for (i = 0; i < authors.length; ++i) if (authors[i].equals(author)) break;
 
@@ -56,7 +56,7 @@ class News implements Serializable {
                 return R.drawable.logo_umcs;
             case 1:
                 this.logoType = LogoType.SKNI;
-                return R.drawable.logo_skni;
+                return R.drawable.logo_umcs;
             case 2:
 //                return LogoType.MICROSOFT;
 
