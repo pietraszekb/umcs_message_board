@@ -3,7 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
-      <module fileurl="file://$PROJECT_DIR$/message-board-umcs.iml" filepath="$PROJECT_DIR$/message-board-umcs.iml" />
+      <module fileurl="file://$PROJECT_DIR$/umcs_message_board.iml" filepath="$PROJECT_DIR$/umcs_message_board.iml" />
     </modules>
   </component>
 </project>
